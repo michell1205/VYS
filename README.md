@@ -52,6 +52,9 @@ Yapay zeka destekli özellikler, sistemin belirli fonksiyonlarında aktif olarak
 * **Offline (internetsiz) kullanımda yapay zeka özellikleri çalışmaz**
 * Bu durumda sistem temel fonksiyonlarıyla çalışmaya devam eder, ancak otomatik optimizasyon devre dışı kalır
 
+
+Not: Program Çalışmadığında Zip halini İndirip Klasöre ayıklayıp Çalıştırmayı Deneyin......!
+
 ---
 
 ## Sonuç
