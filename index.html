@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vardiya Yönetim Sistemi</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Yıllık görünümde dar hücrelerde taşmaları önlemek için özel ayarlar */
+        .yearly-view .shift-day-card {
+            padding: 8px !important;
+        }
+        .yearly-view .shift-day-header {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 2px !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Arka Plan Animasyonu -->
+    <div class="bg-animation">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+    </div>
+
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+    
+    <!-- Top Navbar -->
+    <header class="topbar">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <button type="button" id="mobileMenuBtn" class="glass-btn mobile-only"><i class="fas fa-bars"></i></button>
+                <div class="logo">
+                    <img src="img/beyaz.webp" alt="">
+                    <span>VARDİYA YÖNETİM SİSTEMİ</span>
+                </div>
+            </div>
+            
+            <nav class="nav-menu" id="navMenu">
+                <div class="active-indicator" id="navIndicator"></div>
+                <a href="javascript:void(0)" class="nav-item active" data-target="dashboard"><i class="fas fa-home"></i> <span>Özet</span></a>
+                <a href="javascript:void(0)" class="nav-item" data-target="personnel"><i class="fas fa-users"></i> <span>Personel</span></a>
+                <a href="javascript:void(0)" class="nav-item" data-target="leaves"><i class="fas fa-calendar-minus"></i> <span>İzinler</span></a>
+                <a href="javascript:void(0)" class="nav-item" data-target="shifts"><i class="fas fa-clock"></i> <span>Vardiyalar</span></a>
+                <a href="javascript:void(0)" class="nav-item" data-target="reports"><i class="fas fa-chart-bar"></i> <span>Raporlar</span></a>
+                <a href="javascript:void(0)" class="nav-item" data-target="logs"><i class="fas fa-history"></i> <span>Loglar</span></a>
+                <a href="javascript:void(0)" class="nav-item" data-target="guide"><i class="fas fa-question-circle"></i> <span>Kılavuz</span></a>
+            </nav>
+
+            <div class="topbar-actions">
+                <div class="theme-switcher">
+                    <button type="button" id="themeToggleBtn" class="glass-btn" title="Temayı Değiştir"><i class="fas fa-palette"></i></button>
+                    <div id="themeDropdown" class="theme-dropdown">
+                        <a href="javascript:void(0)" class="theme-option" data-theme="light" title="Açık"><span class="theme-swatch" style="background: #f4f7fe; border-color: #ddd;"></span></a>
+                        <a href="javascript:void(0)" class="theme-option" data-theme="dark" title="Koyu"><span class="theme-swatch" style="background: #000; border-color: #333;"></span></a>
+                        <a href="javascript:void(0)" class="theme-option" data-theme="ocean" title="Okyanus"><span class="theme-swatch" style="background: #0077b6;"></span></a>
+                        <a href="javascript:void(0)" class="theme-option" data-theme="nature" title="Doğa"><span class="theme-swatch" style="background: #2d6a4f;"></span></a>
+                        <a href="javascript:void(0)" class="theme-option" data-theme="sunset" title="Gün Batımı"><span class="theme-swatch" style="background: #e85d04;"></span></a>
+                        <a href="javascript:void(0)" class="theme-option" data-theme="coffee" title="Kahve"><span class="theme-swatch" style="background: #6f4e37;"></span></a>
+                    </div>
+                </div>
+                <button type="button" class="glass-btn" title="Ayarlar" onclick="app.openModal('settingsModal')"><i class="fas fa-cog"></i></button>
+            </div>
+            <div id="scrollProgress" class="scroll-progress-bar"></div>
+        </header>
+
+    <div class="app-container">
+
+        <!-- Main Content -->
+        <main class="main-content">
+
+            <div class="content-wrapper">
+                <!-- PDF/Print Header (Sadece Yazdırmada Görünür) -->
+                <div class="print-header">
+                    <div class="print-logo">
+                        
+                    </div>
+                    <div class="print-info" id="pdfReportDate"></div>
+                </div>
+
+                <!-- Dashboard View -->
+                <section id="dashboard" class="view-section active fade-in">
+                    <div class="header-action">
+                        <h1>Ana Sayfa</h1>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-users"></i></div>
+                            <div class="stat-details">
+                                <h3>Toplam Personel</h3>
+                                <p id="statTotalUsers">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-user-check"></i></div>
+                            <div class="stat-details">
+                                <h3>Aktif Çalışanlar</h3>
+                                <p id="statActiveUsers">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-user-md"></i></div>
+                            <div class="stat-details">
+                                <h3>İzinli / Pasif</h3>
+                                <p id="statLeaveUsers">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dashboard-widgets-grid mt-20" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                        <div class="dashboard-widget">
+                            <h2><i class="fas fa-clock" style="margin-right: 8px; color: var(--primary);"></i> Aktif Vardiya Durumu</h2>
+                            <div class="mt-10" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px 20px; background: rgba(var(--primary-rgb), 0.05); border: 1px solid rgba(var(--primary-rgb), 0.2); border-radius: 16px; height: calc(100% - 38px);">
+                                <div id="activeShiftName" style="font-size: 1.1rem; font-weight: 600; color: var(--primary); margin-bottom: 15px; text-align: center;">Yükleniyor...</div>
+                                <div class="analog-clock fade-in">
+                                    <div class="clock-marker marker-12"></div>
+                                    <div class="clock-marker marker-3"></div>
+                                    <div class="clock-marker marker-6"></div>
+                                    <div class="clock-marker marker-9"></div>
+                                    <div class="clock-face">
+                                        <div class="hand hour-hand" id="hourHand"></div>
+                                        <div class="hand min-hand" id="minHand"></div>
+                                        <div class="hand second-hand" id="secondHand"></div>
+                                        <div class="clock-center"></div>
+                                    </div>
+                                </div>
+                                <div id="shiftCountdown" style="font-size: 3rem; font-weight: 700; font-family: 'Courier New', monospace; color: var(--text-main); line-height: 1; margin-bottom: 10px; letter-spacing: 2px;">00:00:00</div>
+                                <div class="text-muted text-sm">Vardiya bitimine kalan süre</div>
+                            </div>
+                        </div>
+                        <div class="dashboard-widget">
+                            <h2><i class="fas fa-calendar-day" style="margin-right: 8px; color: var(--primary);"></i> Günün Vardiyası</h2>
+                            <div id="todayShifts" class="shift-grid mt-10"></div>
+                        </div>
+                        <div class="dashboard-widget">
+                            <h2><i class="fas fa-list-ul" style="margin-right: 8px; color: var(--primary);"></i> Son İşlemler</h2>
+                            <div id="recentActivityStream" class="activity-stream"></div>
+                        </div>
+                        <div class="dashboard-widget full-width-widget" style="grid-column: 1 / -1;">
+                            <h2><i class="fas fa-chart-line" style="margin-right: 8px; color: var(--primary);"></i> Son 7 Gün Doluluk Oranı</h2>
+                            <div style="position: relative; height: 200px; width: 100%; display: flex; justify-content: center; align-items: center; margin-top: 15px;">
+                                <canvas id="occupancyChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Personnel View -->
+                <section id="personnel" class="view-section fade-in">
+                    <div class="header-action">
+                        <h1>Personel Yönetimi</h1>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <div id="batchActions" style="display: none; gap: 10px; margin-right: 10px; border-right: 1.5px solid var(--border-color); padding-right: 15px;">
+                                <button type="button" class="btn btn-sm btn-outline" onclick="app.openBatchLeaveModal()" title="Seçili personellere toplu izin ekler"><i class="fas fa-calendar-minus"></i> Toplu İzin</button>
+                                <button type="button" class="btn btn-sm btn-danger" onclick="app.batchDeletePersonnel()" title="Seçili personelleri toplu olarak siler"><i class="fas fa-trash"></i> Toplu Sil</button>
+                            </div>
+                            <div class="search-bar">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="globalSearch" placeholder="Personellerde ara...">
+                            </div>
+                            <select id="personnelFilter" class="filter-control">
+                                <option value="all">Tüm Personeller</option>
+                                <option value="active">Aktif Personeller</option>
+                                <option value="passive">Pasif Personeller</option>
+                            </select>
+                            <button type="button" class="btn btn-outline" onclick="app.downloadExcelTemplate()" title="Personelleri Excel'den toplu yüklemek için örnek şablon dosyasını indirir"><i class="fas fa-download"></i> Şablon İndir</button>
+                            <input type="file" id="importExcelInput" accept=".xlsx, .xls" style="display: none;">
+                            <button type="button" class="btn btn-outline" onclick="document.getElementById('importExcelInput').click()" title="Doldurduğunuz Excel şablonunu sisteme aktarır"><i class="fas fa-file-upload"></i> İçe Aktar</button>
+                            <button type="button" class="btn btn-primary" onclick="app.openModal('personnelModal')" title="Sisteme yeni bir personel kaydı eklemek için formu açar"><i class="fas fa-plus"></i> Yeni Personel</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="personnelTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px; text-align: center;"><input type="checkbox" id="selectAllPersonnel"></th>
+                                    <th class="sortable asc" data-sort="name">Ad Soyad <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-sort="role">Görev <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-sort="shift">Mevcut Vardiya <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-sort="status">Durum <i class="fas fa-sort"></i></th>
+                                    <th>İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Leaves View -->
+                <section id="leaves" class="view-section fade-in">
+                    <div class="header-action">
+                        <h1>Personel İzin Yönetimi</h1>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <select id="leaveFilter" class="filter-control">
+                                <option value="all">Tüm İzinler</option>
+                                <option value="active">Sadece Aktifler</option>
+                                <option value="past">Süresi Geçmiş</option>
+                            </select>
+                            <button type="button" class="btn btn-primary" onclick="app.openModal('leaveModal')" title="Bir personele mazeret, rapor veya yıllık izin ekler"><i class="fas fa-plus"></i> İzin Ekle</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="leavesTable">
+                            <thead>
+                                <tr>
+                                    <th>Personel</th>
+                                    <th>Başlangıç</th>
+                                    <th>Bitiş</th>
+                                    <th>Sebep</th>
+                                    <th>Durum</th>
+                                    <th>İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Shifts View -->
+                <section id="shifts" class="view-section fade-in">
+                    <div class="header-action">
+                        <h1>Vardiyalar</h1>
+                        <div style="display: flex; gap: 10px;">
+                            <button type="button" class="btn btn-outline" onclick="app.exportShiftsExcel()" title="Mevcut vardiya takvimini Excel dosyası olarak dışa aktarır"><i class="fas fa-file-excel"></i> Excel</button>
+                            <button type="button" class="btn btn-outline" onclick="app.exportShiftsPDF()" title="Mevcut vardiya takvimini PDF dosyası olarak yazdırır/kaydeder"><i class="fas fa-file-pdf"></i> PDF</button>
+                            <button type="button" class="btn btn-outline" onclick="app.exportShiftsWord()" title="Mevcut vardiya takvimini Word dosyası olarak indirir"><i class="fas fa-file-word"></i> Word</button>
+                            <button type="button" class="btn btn-primary" onclick="app.openModal('shiftModal')" title="Yapay zeka destekli algoritma ile otomatik vardiyalar üretir"><i class="fas fa-cogs"></i> Vardiya Oluştur</button>
+                        </div>
+                    </div>
+                    <div class="view-tabs mb-20">
+                        <button type="button" class="view-tab active" data-view="weekly" title="Vardiyaları detaylı, haftalık geniş kartlar halinde gösterir">Haftalık Görünüm</button>
+                        <button type="button" class="view-tab" data-view="monthly" title="Vardiyaları takvim düzeninde kompakt bir ay görünümünde gösterir">Aylık Görünüm</button>
+                        <button type="button" class="view-tab" data-view="yearly" title="Vardiyaları tüm yıla yayılmış, en dar grid yapısında gösterir">Yıllık Görünüm</button>
+                    </div>
+                    <div class="calendar-container" id="shiftCalendar"></div>
+                </section>
+
+                <!-- Reports View -->
+                <section id="reports" class="view-section fade-in">
+                    <div class="header-action">
+                        <h1>Raporlar</h1>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="month" id="reportMonthFilter" class="filter-control">
+                            <button type="button" class="btn btn-primary" onclick="app.generateReport(event)" title="Seçili ay için raporu oluşturur veya yeniler"><i class="fas fa-sync-alt"></i> Rapor Oluştur</button>
+                            <button type="button" class="btn btn-outline" onclick="app.exportCSV()" title="Görüntülenen raporları hesap çizelgesinde (CSV) açmak için indirir"><i class="fas fa-file-excel"></i> CSV İndir</button>
+                            <button type="button" class="btn btn-outline" onclick="app.exportReportWord()" title="Raporu Word dosyası olarak indirir"><i class="fas fa-file-word"></i> Word İndir</button>
+                            <button type="button" class="btn btn-outline" onclick="app.exportPDFDownload()" title="Grafikler ve verilerle birlikte Raporu PDF olarak indirir"><i class="fas fa-file-pdf"></i> PDF İndir</button>
+                        </div>
+                    </div>
+                    <p class="text-muted text-sm mb-20"><i class="fas fa-info-circle"></i> Fazla mesai hesaplaması için aylık normal çalışma süresi <strong id="standardHoursText">180 saat</strong> olarak baz alınmıştır.</p>
+                    <div class="table-container" id="reportArea">
+                        <table id="reportsTable">
+                            <thead>
+                                <tr>
+                                    <th class="sortable asc" data-sort="name">Personel <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-sort="locations">Konum & Mesai Dağılımı <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-sort="total">Toplam Vardiya <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-sort="totalHours">Toplam Saat <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-sort="overtime">Fazla Mesai <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-sort="m">Sabah <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-sort="e">Akşam <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-sort="n">Gece <i class="fas fa-sort"></i></th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Logs View -->
+                <section id="logs" class="view-section fade-in">
+                    <div class="header-action">
+                        <h1>İşlem Logları</h1>
+                        <button type="button" class="btn btn-danger" onclick="app.clearLogs()" title="Tüm sistem hareket geçmişini (logları) kalıcı olarak temizler"><i class="fas fa-trash"></i> Logları Temizle</button>
+                    </div>
+                    <div class="table-container">
+                        <table id="logsTable">
+                            <thead>
+                                <tr>
+                                    <th>Tarih</th>
+                                    <th>İşlem Tipi</th>
+                                    <th>Açıklama</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Guide / How to Use View -->
+                <section id="guide" class="view-section fade-in">
+                    <div class="header-action">
+                        <h1>Nasıl Kullanılır?</h1>
+                    </div>
+                    <div class="guide-grid">
+                        <div class="guide-card">
+                            <h3><i class="fas fa-user-plus"></i> 1. Personel ve Veri Girişi</h3>
+                            <p>Sistemi kullanmaya başlamak için personellerinizi tanımlamanız gerekir:</p>
+                            <ul>
+                                <li><strong>Toplu Kayıt:</strong> "Şablon İndir" butonuyla alacağınız Excel dosyasını doldurup "İçe Aktar" diyerek yüzlerce personeli saniyeler içinde yükleyebilirsiniz.</li>
+                                <li><strong>Joker Modu:</strong> Sadece ihtiyaç halinde (kadro eksik kaldığında) vardiyaya dahil edilecek personelleri "Joker" olarak işaretleyin.</li>
+                                <li><strong>Kısıtlamalar:</strong> "Hafta Sonu Çalışmaz" seçeneği ile personelin cumartesi-pazar vardiyalarına yazılmasını engelleyebilirsiniz.</li>
+                            </ul>
+                        </div>
+                        <div class="guide-card">
+                            <h3><i class="fas fa-brain"></i> 2. Akıllı Vardiya Algoritması</h3>
+                            <p>Sistem, vardiyaları oluştururken şu katı kuralları otomatik olarak denetler:</p>
+                            <ul>
+                                <li><strong>Adil Dağılım:</strong> Personellerin toplam çalışma sayılarını takip eder ve vardiyası en az olan kişiye öncelik verir.</li>
+                                <li><strong>Gece Dinlenmesi:</strong> Gece vardiyasından çıkan personel, bir sonraki günün sabah vardiyasına asla yazılmaz.</li>
+                                <li><strong>6+1 Kuralı:</strong> Üst üste 6 gün çalışan personelin 7. gün dinlenmesini (zorunlu izin) otomatik sağlar.</li>
+                                <li><strong>Çakışma Önleme:</strong> Aynı personelin aynı gün iki farklı noktada görevlendirilmesini engeller.</li>
+                            </ul>
+                        </div>
+                        <div class="guide-card">
+                            <h3><i class="fas fa-sliders-h"></i> 3. Vardiya ve Saat Ayarları</h3>
+                            <p>Sistemi kendi çalışma modelinize göre özelleştirebilirsiniz:</p>
+                            <ul>
+                                <li><strong>Başlangıç Saatleri:</strong> Ayarlar menüsünden Sabah, Akşam ve Gece vardiyalarının kaçta başlayacağını belirleyebilirsiniz.</li>
+                                <li><strong>Aylık Eşik:</strong> Fazla mesai hesaplaması için aylık standart saati (örn: 180 saat) güncelleyebilirsiniz.</li>
+                                <li><strong>Görünüm:</strong> Haftalık, Aylık veya Yıllık görünümler arasında geçiş yaparak planlamayı farklı perspektiflerden görebilirsiniz.</li>
+                            </ul>
+                        </div>
+                        <div class="guide-card">
+                            <h3><i class="fas fa-calendar-check"></i> 4. İzin ve Mazeret Yönetimi</h3>
+                            <p>İzinlerin vardiya planına etkisi:</p>
+                            <ul>
+                                <li><strong>Otomatik Senkronizasyon:</strong> İzinli bir personele vardiya yazılmaz. Eğer vardiyası varken izin girilirse, sistem uyarı verir.</li>
+                                <li><strong>Toplu İzin:</strong> Personel listesinden birden fazla kişiyi seçerek aynı anda bayram veya resmi tatil izni girebilirsiniz.</li>
+                                <li><strong>Durum Takibi:</strong> İzin süresi dolan personeller otomatik olarak "Aktif" durumuna geri döner.</li>
+                            </ul>
+                        </div>
+                        <div class="guide-card">
+                            <h3><i class="fas fa-file-invoice"></i> 5. Analiz ve Raporlama</h3>
+                            <p>Verilerinizi resmi belgelere dönüştürün:</p>
+                            <ul>
+                                <li><strong>Konum Analizi:</strong> Personelin hangi noktada toplam kaç saat mesai yaptığını Raporlar sekmesinden görebilirsiniz.</li>
+                                <li><strong>Çıktı Formatları:</strong> Vardiya takvimini Word (.doc), Excel (.xlsx) veya PDF olarak; raporları ise CSV formatında indirebilirsiniz.</li>
+                                <li><strong>Log Kayıtları:</strong> Yapılan her ekleme, silme ve düzenleme işlemi "Loglar" sekmesinde tarih-saat bazlı saklanır.</li>
+                            </ul>
+                        </div>
+                        <div class="guide-card">
+                            <h3><i class="fas fa-database"></i> 6. Veri Güvenliği ve Yedekleme</h3>
+                            <p>Verilerinizin kontrolü tamamen sizde:</p>
+                            <ul>
+                                <li><strong>Yerel Depolama:</strong> Verileriniz tarayıcınızın belleğinde saklanır. İnternet kesilse bile çalışmaya devam edebilirsiniz.</li>
+                                <li><strong>JSON Yedekleme:</strong> Ayarlar kısmından tüm sistemin yedeğini tek bir dosya olarak indirebilir ve başka bir bilgisayara yükleyebilirsiniz.</li>
+                                <li><strong>Sıfırlama:</strong> Yeni bir döneme başlamak isterseniz "Sistemi Sıfırla" butonu ile tüm verileri güvenli bir şekilde silebilirsiniz.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Sıkça Sorulan Sorular (Accordion) -->
+                    <div class="faq-section">
+                        <h2><i class="fas fa-comments-alt" style="color: var(--primary);"></i> Sıkça Sorulan Sorular</h2>
+                        <div class="faq-container">
+                            <div class="faq-item">
+                                <div class="faq-question">Verilerim internete yükleniyor mu? <i class="fas fa-chevron-down"></i></div>
+                                <div class="faq-answer">Hayır. Bu sistem tamamen tarayıcı tabanlı çalışır. Verileriniz sunucularımıza değil, kullandığınız tarayıcının yerel hafızasına (Local Storage) kaydedilir. Bu nedenle verileriniz cihazınızda kalır.</div>
+                            </div>
+                            <div class="faq-item">
+                                <div class="faq-question">Excel'den aktarma yaparken hata alıyorum, neden olabilir? <i class="fas fa-chevron-down"></i></div>
+                                <div class="faq-answer">En yaygın sebep sütun isimlerinin uyuşmamasıdır. Lütfen "Şablon İndir" butonuyla aldığınız dosyadaki "Ad Soyad" sütun başlığını değiştirmeden verilerinizi girin. Dosyanın .xlsx formatında olduğundan emin olun.</div>
+                            </div>
+                            <div class="faq-item">
+                                <div class="faq-question">Algoritma bazı görev noktalarını neden boş bırakıyor? <i class="fas fa-chevron-down"></i></div>
+                                <div class="faq-answer">Bu durum genellikle toplam aktif personel sayısının, o günkü toplam görev noktası ve vardiya ihtiyacını karşılayamadığı durumlarda oluşur. Personel listesinden "Aktif" sayısını kontrol edin veya vardiya başı personel sayısını düşürün.</div>
+                            </div>
+                            <div class="faq-item">
+                                <div class="faq-question">Farklı bir bilgisayardan verilerime ulaşabilir miyim? <i class="fas fa-chevron-down"></i></div>
+                                <div class="faq-answer">Veriler yerel saklandığı için doğrudan ulaşamazsınız. Ancak Ayarlar sekmesinden "Yedek İndir" yaparak aldığınız JSON dosyasını diğer bilgisayarda "Yedekten Dön" diyerek yükleyebilirsiniz.</div>
+                            </div>
+                            <div class="faq-item">
+                                <div class="faq-question">Gece vardiyası kuralları nasıl çalışıyor? <i class="fas fa-chevron-down"></i></div>
+                                <div class="faq-answer">Sistem, gece vardiyasında çalışan bir personeli ertesi günün sabah vardiyasına yazmaz (dinlenme kuralı). Ayrıca, adaletli dağılım için toplam çalışma saati en az olan kişilere her zaman öncelik verir.</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+        
+        <!-- Bottom Navigation Bar (Mobile Only) -->
+        <nav class="bottom-nav mobile-only">
+            <a href="javascript:void(0)" class="nav-item active" data-target="dashboard"><i class="fas fa-home"></i><span>Özet</span></a>
+            <a href="javascript:void(0)" class="nav-item" data-target="personnel"><i class="fas fa-users"></i><span>Personel</span></a>
+            <a href="javascript:void(0)" class="nav-item" data-target="shifts"><i class="fas fa-clock"></i><span>Vardiya</span></a>
+            <a href="javascript:void(0)" class="nav-item" data-target="reports"><i class="fas fa-chart-bar"></i><span>Rapor</span></a>
+            <a href="javascript:void(0)" class="nav-item" onclick="document.getElementById('mobileMenuBtn').click(); return false;"><i class="fas fa-bars"></i><span>Menü</span></a>
+        </nav>
+    </div>
+
+    <!-- Modals -->
+    <div id="personnelModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Personel Ekle/Düzenle</h2>
+                <span class="close" onclick="app.closeModal('personnelModal')">&times;</span>
+            </div>
+            <form id="personnelForm">
+                <input type="hidden" id="p_id">
+                <div class="form-group"><label>Ad Soyad:</label><input type="text" id="p_name" required></div>
+                <div class="form-group"><label>Görev Noktası:</label><input type="text" id="p_role" required></div>
+                <div class="form-group checkbox-group"><label><input type="checkbox" id="p_joker"> Joker Personel</label></div>
+                <div class="form-group checkbox-group"><label><input type="checkbox" id="p_leave"> İzinli</label></div>
+                <div class="form-group checkbox-group"><label><input type="checkbox" id="p_noweekend"> Hafta Sonu Çalışmaz</label></div>
+                <div class="form-group checkbox-group"><label><input type="checkbox" id="p_active" checked> Aktif</label></div>
+                <button type="submit" class="btn btn-primary w-100">Kaydet</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="shiftModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Otomatik Vardiya Oluştur</h2>
+                <span class="close" onclick="app.closeModal('shiftModal')">&times;</span>
+            </div>
+            <form id="shiftForm">
+                <div class="form-group">
+                    <label>Güvenlik Noktaları (Birden fazla seçebilirsiniz):</label>
+                    <div id="s_locations_container" style="max-height: 120px; overflow-y: auto; border: 1.5px solid var(--border-color); border-radius: 14px; padding: 10px; background: rgba(150, 150, 150, 0.05);"></div>
+                </div>
+                <div class="form-group">
+                    <label>Hızlı Seçim:</label>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" class="btn btn-sm btn-outline" style="flex: 1;" onclick="app.setShiftRange('week')">1 Haftalık</button>
+                        <button type="button" class="btn btn-sm btn-outline" style="flex: 1;" onclick="app.setShiftRange('month')">1 Aylık</button>
+                        <button type="button" class="btn btn-sm btn-outline" style="flex: 1;" onclick="app.setShiftRange('year')">1 Yıllık</button>
+                    </div>
+                </div>
+                <div class="form-group"><label>Başlangıç Tarihi:</label><input type="date" id="s_start" required></div>
+                <div class="form-group"><label>Bitiş Tarihi:</label><input type="date" id="s_end" required></div>
+                <div class="form-group" style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <label style="font-size: 0.85rem;"><i class="fas fa-sun" style="color:#f1c40f"></i> Sabah Personeli:</label>
+                        <input type="number" id="s_morning_count" value="2" min="0" required>
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 0.85rem;"><i class="fas fa-cloud-sun" style="color:#e67e22"></i> Akşam Personeli:</label>
+                        <input type="number" id="s_evening_count" value="2" min="0" required>
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 0.85rem;"><i class="fas fa-moon" style="color:#34495e"></i> Gece Personeli:</label>
+                        <input type="number" id="s_night_count" value="1" min="0" required>
+                    </div>
+                </div>
+                <div class="info-alert mt-15">
+                    <i class="fas fa-robot"></i>
+                    <div>
+                        <strong>Yapay Zeka Dağıtım Algoritması</strong>
+                        <p>Sistem, adil bir dağıtım için personellerin <strong>toplam vardiya sayılarını</strong> baz alır ve vardiyası en az olan kişiye öncelik verir. Aynı zamanda bir kişinin üst üste gece çalışmasını, gece vardiyasından çıktığı sabah tekrar çalışmasını ve <strong>haftada en az 1 gün (6 gün üst üste çalıştıktan sonra) izin yapmasını</strong> otomatik olarak sağlar.</p>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 mt-20">Oluştur</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="leaveModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Yeni İzin Ekle</h2>
+                <span class="close" onclick="app.closeModal('leaveModal')">&times;</span>
+            </div>
+            <form id="leaveForm">
+                <div class="form-group">
+                    <label>Personel Seçin:</label>
+                    <select id="l_person" required></select>
+                </div>
+                <div class="form-group"><label>Başlangıç Tarihi:</label><input type="date" id="l_start" required></div>
+                <div class="form-group"><label>Bitiş Tarihi:</label><input type="date" id="l_end" required></div>
+                <div class="form-group">
+                    <label>İzin Sebebi:</label>
+                    <select id="l_reason" required>
+                        <option value="Yıllık İzin">Yıllık İzin</option>
+                        <option value="Rapor">Rapor (Hastalık)</option>
+                        <option value="Mazeret İzni">Mazeret İzni</option>
+                        <option value="Ücretsiz İzin">Ücretsiz İzin</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 mt-10">İzni Kaydet</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="modal">
+        <div class="modal-content settings-modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-sliders-h" style="color: var(--primary); margin-right: 10px;"></i> Sistem Ayarları</h2>
+                <span class="close" onclick="app.closeModal('settingsModal')">&times;</span>
+            </div>
+            
+            <div class="settings-grid">
+                <!-- Güvenlik Noktaları -->
+                <div class="settings-section">
+                    <div class="section-header">
+                        <div class="icon-box"><i class="fas fa-shield-alt"></i></div>
+                        <h3>Güvenlik Noktaları</h3>
+                    </div>
+                    <div class="settings-body">
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                            <input type="text" id="newLocationInput" placeholder="Yeni nokta adı...">
+                            <button type="button" class="btn btn-primary" onclick="app.addLocation()"><i class="fas fa-plus"></i></button>
+                        </div>
+                        <ul id="locationsList" class="custom-list"></ul>
+                    </div>
+                </div>
+
+                <!-- Genel Ayarlar -->
+                <div class="settings-section">
+                    <div class="section-header">
+                        <div class="icon-box"><i class="fas fa-clock"></i></div>
+                        <h3>Genel Ayarlar</h3>
+                    </div>
+                    <div class="settings-body">
+                        <div class="setting-item">
+                            <label>Aylık Çalışma (Saat):</label>
+                            <input type="number" id="monthlyHoursInput" class="filter-control-small">
+                        </div>
+                        <div class="setting-item">
+                            <label>Animasyon Hızı:</label>
+                            <select id="animSpeedInput" class="filter-control-small">
+                                <option value="25s">Yavaş</option>
+                                <option value="15s">Normal</option>
+                                <option value="8s">Hızlı</option>
+                                <option value="0s">Kapalı</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label>Sabah Başlangıç:</label>
+                            <input type="number" id="morningStartInput" class="filter-control-small" min="0" max="23">
+                        </div>
+                        <div class="setting-item">
+                            <label>Akşam Başlangıç:</label>
+                            <input type="number" id="eveningStartInput" class="filter-control-small" min="0" max="23">
+                        </div>
+                        <div class="setting-item">
+                            <label>Gece Başlangıç:</label>
+                            <input type="number" id="nightStartInput" class="filter-control-small" min="0" max="23">
+                        </div>
+                        <button type="button" class="btn btn-primary w-100 mt-20" onclick="app.saveGeneralSettings()"><i class="fas fa-save"></i> Kaydet</button>
+                    </div>
+                </div>
+                
+                <!-- Veri Yedekleme -->
+                <div class="settings-section full-width">
+                    <div class="section-header">
+                        <div class="icon-box"><i class="fas fa-database"></i></div>
+                        <h3>Veri Yedekleme</h3>
+                    </div>
+                    <div class="settings-body">
+                        <p class="text-muted text-sm mb-20"><i class="fas fa-info-circle"></i> Sistemdeki tüm verileri tek bir JSON dosyası olarak cihazınıza indirebilir veya yükleyebilirsiniz.</p>
+                        <div style="display: flex; gap: 15px;">
+                            <button type="button" class="btn btn-primary" style="flex:1;" onclick="app.exportBackup()"><i class="fas fa-download"></i> Yedek İndir (JSON)</button>
+                            <input type="file" id="importBackupInput" accept=".json" style="display: none;">
+                            <button type="button" class="btn btn-outline" style="flex:1;" onclick="document.getElementById('importBackupInput').click()"><i class="fas fa-upload"></i> Yedekten Dön</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sistemi Sıfırla -->
+                <div class="settings-section full-width" style="border-color: rgba(231, 76, 60, 0.3); background: rgba(231, 76, 60, 0.02);">
+                    <div class="section-header" style="border-bottom-color: rgba(231, 76, 60, 0.2);">
+                        <div class="icon-box" style="background: rgba(231, 76, 60, 0.1); color: var(--danger);"><i class="fas fa-exclamation-triangle"></i></div>
+                        <h3 style="color: var(--danger);">Sistemi Sıfırla</h3>
+                    </div>
+                    <div class="settings-body">
+                        <p class="text-muted text-sm mb-20"><i class="fas fa-info-circle"></i> Bu işlem sistemdeki tüm personelleri, vardiyaları, izinleri ve ayarları <strong>kalıcı olarak</strong> siler. Bu işlem geri alınamaz!</p>
+                        <button type="button" class="btn btn-danger w-100" onclick="app.resetSystem()"><i class="fas fa-trash-alt"></i> Tüm Verileri Sil ve Sıfırla</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="personnelDetailModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 id="detailModalTitle">Personel Detayları</h2>
+                <span class="close" onclick="app.closeModal('personnelDetailModal')">&times;</span>
+            </div>
+            <div id="detailModalBody"></div>
+        </div>
+    </div>
+    
+    <div id="batchLeaveModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Toplu İzin Ekle</h2>
+                <span class="close" onclick="app.closeModal('batchLeaveModal')">&times;</span>
+            </div>
+            <form id="batchLeaveForm">
+                <p class="text-muted text-sm mb-15" style="padding: 10px; background: rgba(var(--primary-rgb), 0.1); border-radius: 8px;"><i class="fas fa-info-circle"></i> Seçili <strong id="batchLeaveCount" style="color: var(--primary); font-size: 1.1rem;">0</strong> personele aşağıdaki izin eklenecektir.</p>
+                <div class="form-group"><label>Başlangıç Tarihi:</label><input type="date" id="bl_start" required></div>
+                <div class="form-group"><label>Bitiş Tarihi:</label><input type="date" id="bl_end" required></div>
+                <div class="form-group">
+                    <label>İzin Sebebi:</label>
+                    <select id="bl_reason" required>
+                        <option value="Yıllık İzin">Yıllık İzin</option>
+                        <option value="Rapor">Rapor (Hastalık)</option>
+                        <option value="Mazeret İzni">Mazeret İzni</option>
+                        <option value="Ücretsiz İzin">Ücretsiz İzin</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 mt-20">Toplu İzinleri Kaydet</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="manualAssignModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Manuel Personel Atama</h2>
+                <span class="close" onclick="app.closeModal('manualAssignModal')">&times;</span>
+            </div>
+            <form id="manualAssignForm">
+                <input type="hidden" id="ma_date">
+                <input type="hidden" id="ma_location">
+                <input type="hidden" id="ma_slot">
+                <p id="ma_info" class="text-muted text-sm mb-10"></p>
+                <div class="form-group">
+                    <label>Görevlendirilecek Personeller:</label>
+                    <div id="ma_personnel_list" style="max-height: 200px; overflow-y: auto; border: 1.5px solid var(--border-color); border-radius: 14px; padding: 10px; background: rgba(150, 150, 150, 0.05);"></div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 mt-10">Kaydet</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
